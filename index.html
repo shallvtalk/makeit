@@ -155,6 +155,21 @@
         .training-prompt {
             white-space: pre-line;
         }
+        .process-group-badge {
+            color: #ffffff;
+            border-radius: 999px;
+            padding: 0.2rem 0.7rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .training-directory {
+            max-height: 28rem;
+            overflow-y: auto;
+        }
+        .training-directory button {
+            width: 100%;
+            text-align: left;
+        }
         .desktop-actions {
             display: none;
         }
@@ -653,6 +668,7 @@
                 currentIndex: 0,
                 answerVisible: false,
                 mode: 'process_to_answer',
+                orderMode: 'random',
                 sessionCorrect: 0,
                 sessionTotal: 0
             }
@@ -856,13 +872,32 @@
             renderProcessTraining();
         }
 
+        function setProcessTrainingOrderMode(mode) {
+            state.processTraining.orderMode = mode;
+            renderProcessTraining();
+        }
+
         function revealProcessTrainingAnswer() {
             state.processTraining.answerVisible = true;
             renderProcessTraining();
         }
 
         function nextProcessTrainingCard() {
-            state.processTraining.currentIndex = Math.floor(Math.random() * PROCESS_TRAINING_DATA.length);
+            if (state.processTraining.orderMode === 'sequence') {
+                state.processTraining.currentIndex = (state.processTraining.currentIndex + 1) % PROCESS_TRAINING_DATA.length;
+            } else {
+                let nextIndex = state.processTraining.currentIndex;
+                while (PROCESS_TRAINING_DATA.length > 1 && nextIndex === state.processTraining.currentIndex) {
+                    nextIndex = Math.floor(Math.random() * PROCESS_TRAINING_DATA.length);
+                }
+                state.processTraining.currentIndex = nextIndex;
+            }
+            state.processTraining.answerVisible = false;
+            renderProcessTraining();
+        }
+
+        function previousProcessTrainingCard() {
+            state.processTraining.currentIndex = (state.processTraining.currentIndex - 1 + PROCESS_TRAINING_DATA.length) % PROCESS_TRAINING_DATA.length;
             state.processTraining.answerVisible = false;
             renderProcessTraining();
         }
@@ -873,6 +908,95 @@
                 state.processTraining.sessionCorrect += 1;
             }
             nextProcessTrainingCard();
+        }
+
+        function jumpToProcessTraining(index) {
+            state.processTraining.currentIndex = index;
+            state.processTraining.answerVisible = false;
+            renderProcessTraining();
+        }
+
+        function getProcessGroupMeta(processName) {
+            const processGroupMap = {
+                "制定项目章程": { label: "启动", color: "#0f766e" },
+                "制订项目管理计划": { label: "规划", color: "#2563eb" },
+                "指导与管理项目工作": { label: "执行", color: "#7c3aed" },
+                "管理项目知识": { label: "执行", color: "#7c3aed" },
+                "监控项目工作": { label: "监控", color: "#ea580c" },
+                "实施整体变更控制": { label: "监控", color: "#ea580c" },
+                "结束项目或阶段": { label: "收尾", color: "#475569" },
+                "规划范围管理": { label: "规划", color: "#2563eb" },
+                "收集需求": { label: "规划", color: "#2563eb" },
+                "定义范围": { label: "规划", color: "#2563eb" },
+                "创建WBS": { label: "规划", color: "#2563eb" },
+                "确认范围": { label: "监控", color: "#ea580c" },
+                "控制范围": { label: "监控", color: "#ea580c" },
+                "规划进度管理": { label: "规划", color: "#2563eb" },
+                "定义活动": { label: "规划", color: "#2563eb" },
+                "排列活动顺序": { label: "规划", color: "#2563eb" },
+                "估算活动持续时间": { label: "规划", color: "#2563eb" },
+                "制订进度计划": { label: "规划", color: "#2563eb" },
+                "控制进度": { label: "监控", color: "#ea580c" },
+                "规划成本管理": { label: "规划", color: "#2563eb" },
+                "估算成本": { label: "规划", color: "#2563eb" },
+                "制定预算": { label: "规划", color: "#2563eb" },
+                "控制成本": { label: "监控", color: "#ea580c" },
+                "规划质量管理": { label: "规划", color: "#2563eb" },
+                "管理质量": { label: "执行", color: "#7c3aed" },
+                "控制质量": { label: "监控", color: "#ea580c" },
+                "规划资源管理": { label: "规划", color: "#2563eb" },
+                "估算活动资源": { label: "规划", color: "#2563eb" },
+                "获取资源": { label: "执行", color: "#7c3aed" },
+                "建设团队": { label: "执行", color: "#7c3aed" },
+                "管理团队": { label: "执行", color: "#7c3aed" },
+                "控制资源": { label: "监控", color: "#ea580c" },
+                "规划沟通管理": { label: "规划", color: "#2563eb" },
+                "管理沟通": { label: "执行", color: "#7c3aed" },
+                "监督沟通": { label: "监控", color: "#ea580c" },
+                "规划风险管理": { label: "规划", color: "#2563eb" },
+                "识别风险": { label: "规划", color: "#2563eb" },
+                "实施定性风险分析": { label: "规划", color: "#2563eb" },
+                "实施定量风险分析": { label: "规划", color: "#2563eb" },
+                "规划风险应对": { label: "规划", color: "#2563eb" },
+                "实施风险应对": { label: "执行", color: "#7c3aed" },
+                "监督风险": { label: "监控", color: "#ea580c" },
+                "规划采购管理": { label: "规划", color: "#2563eb" },
+                "实施采购": { label: "执行", color: "#7c3aed" },
+                "控制采购": { label: "监控", color: "#ea580c" },
+                "识别干系人": { label: "启动", color: "#0f766e" },
+                "规划干系人参与": { label: "规划", color: "#2563eb" },
+                "管理干系人参与": { label: "执行", color: "#7c3aed" },
+                "监督干系人参与": { label: "监控", color: "#ea580c" }
+            };
+            return processGroupMap[processName] || { label: "未标记", color: "#78716c" };
+        }
+
+        function renderProcessTrainingDirectory() {
+            const groups = PROCESS_TRAINING_DATA.reduce((acc, item, index) => {
+                if (!acc[item.领域]) acc[item.领域] = [];
+                acc[item.领域].push({ ...item, index });
+                return acc;
+            }, {});
+
+            return Object.entries(groups).map(([domain, items]) => `
+                <div class="shell-panel-muted rounded-xl p-4 border">
+                    <div class="font-semibold mb-3">${domain}</div>
+                    <div class="space-y-2">
+                        ${items.map((item) => {
+                            const meta = getProcessGroupMeta(item.过程);
+                            const isActive = item.index === state.processTraining.currentIndex;
+                            return `
+                                <button onclick="jumpToProcessTraining(${item.index})" class="rounded-lg border px-3 py-3 ${isActive ? 'training-pill' : 'shell-panel'}">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="text-sm font-medium">${item.过程}</div>
+                                        <span class="process-group-badge" style="background:${meta.color};">${meta.label}</span>
+                                    </div>
+                                </button>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `).join('');
         }
 
         function getProcessTrainingPrompt(item) {
@@ -938,14 +1062,28 @@
             const container = document.getElementById('process-training-container');
             const item = PROCESS_TRAINING_DATA[state.processTraining.currentIndex];
             const prompt = getProcessTrainingPrompt(item);
+            const processGroupMeta = getProcessGroupMeta(item.过程);
             const accuracy = state.processTraining.sessionTotal === 0
                 ? '0%'
                 : `${Math.round((state.processTraining.sessionCorrect / state.processTraining.sessionTotal) * 100)}%`;
 
             container.innerHTML = `
-                <div class="space-y-6">
-                    <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
-                        <div class="flex flex-wrap gap-2 items-center">
+                <div class="grid grid-cols-1 lg:grid-cols-[18rem_minmax(0,1fr)] gap-6">
+                    <div class="training-directory space-y-4">
+                        <div class="shell-panel p-5 rounded-xl shadow-sm border">
+                            <div class="font-semibold mb-3">过程目录</div>
+                            <div class="text-sm muted-text leading-relaxed">按知识领域查看全部过程，点击可直接跳转。颜色标签表示所属过程组。</div>
+                        </div>
+                        ${renderProcessTrainingDirectory()}
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
+                            <div class="flex flex-wrap gap-2 items-center mb-4">
+                                <button onclick="setProcessTrainingOrderMode('random')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'random' ? 'training-pill' : 'shell-panel-muted'}">随机模式</button>
+                                <button onclick="setProcessTrainingOrderMode('sequence')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'sequence' ? 'training-pill' : 'shell-panel-muted'}">顺序模式</button>
+                            </div>
+                            <div class="flex flex-wrap gap-2 items-center">
                             <button onclick="setProcessTrainingMode('recite')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'recite' ? 'training-pill' : 'shell-panel-muted'}">纯背诵</button>
                             <button onclick="setProcessTrainingMode('process_to_answer')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'process_to_answer' ? 'training-pill' : 'shell-panel-muted'}">过程 -> 定义/输出</button>
                             <button onclick="setProcessTrainingMode('definition_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'definition_to_process' ? 'training-pill' : 'shell-panel-muted'}">定义 -> 过程</button>
@@ -953,42 +1091,47 @@
                         </div>
                     </div>
 
-                    <div class="training-card shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
-                        <div class="flex flex-wrap gap-3 items-center justify-between mb-5">
-                            <div class="flex items-center gap-2 text-sm muted-text">
+                        <div class="training-card shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
+                            <div class="flex flex-wrap gap-3 items-center justify-between mb-5">
+                                <div class="flex items-center gap-2 text-sm muted-text">
                                 <span class="training-pill px-3 py-1 rounded-full">${item.领域}</span>
+                                <span class="process-group-badge" style="background:${processGroupMeta.color};">${processGroupMeta.label}过程组</span>
                                 <span>第 ${state.processTraining.currentIndex + 1} / ${PROCESS_TRAINING_DATA.length} 题</span>
+                                </div>
+                                <div class="text-sm muted-text">本轮正确率：${accuracy} (${state.processTraining.sessionCorrect}/${state.processTraining.sessionTotal})</div>
                             </div>
-                            <div class="text-sm muted-text">本轮正确率：${accuracy} (${state.processTraining.sessionCorrect}/${state.processTraining.sessionTotal})</div>
-                        </div>
 
-                        <div class="mb-5">
-                            <div class="text-sm muted-text mb-2">${prompt.label}</div>
-                            <div class="training-prompt text-lg md:text-xl font-semibold leading-relaxed">${prompt.body}</div>
-                        </div>
+                            <div class="mb-5">
+                                <div class="text-sm muted-text mb-2">${prompt.label}</div>
+                                <div class="training-prompt text-lg md:text-xl font-semibold leading-relaxed">${prompt.body}</div>
+                            </div>
 
-                        ${state.processTraining.mode === 'recite' ? `
-                            <div class="note-box rounded-xl p-4 mb-5">
-                                ${getProcessTrainingAnswer(item)}
-                            </div>
-                            <div class="flex flex-wrap gap-3">
-                                <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md training-pill">下一题</button>
-                            </div>
-                        ` : state.processTraining.answerVisible ? `
-                            <div class="note-box rounded-xl p-4 mb-5">
-                                ${getProcessTrainingAnswer(item)}
-                            </div>
-                            <div class="flex flex-wrap gap-3">
-                                <button onclick="markProcessTrainingResult(false)" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">再练一次</button>
-                                <button onclick="markProcessTrainingResult(true)" class="text-sm px-4 py-2 rounded-md training-pill">记住了</button>
-                                <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel border shell-border">换一题</button>
-                            </div>
-                        ` : `
-                            <div class="flex flex-wrap gap-3">
-                                <button onclick="revealProcessTrainingAnswer()" class="text-sm px-4 py-2 rounded-md training-pill">想好了，显示答案</button>
-                                <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">先换一题</button>
-                            </div>
-                        `}
+                            ${state.processTraining.mode === 'recite' ? `
+                                <div class="note-box rounded-xl p-4 mb-5">
+                                    ${getProcessTrainingAnswer(item)}
+                                </div>
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="previousProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">上一题</button>
+                                    <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md training-pill">下一题</button>
+                                </div>
+                            ` : state.processTraining.answerVisible ? `
+                                <div class="note-box rounded-xl p-4 mb-5">
+                                    ${getProcessTrainingAnswer(item)}
+                                </div>
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="markProcessTrainingResult(false)" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">再练一次</button>
+                                    <button onclick="markProcessTrainingResult(true)" class="text-sm px-4 py-2 rounded-md training-pill">记住了</button>
+                                    <button onclick="previousProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel border shell-border">上一题</button>
+                                    <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel border shell-border">下一题</button>
+                                </div>
+                            ` : `
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="revealProcessTrainingAnswer()" class="text-sm px-4 py-2 rounded-md training-pill">想好了，显示答案</button>
+                                    <button onclick="previousProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">上一题</button>
+                                    <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md shell-panel-muted border shell-border">下一题</button>
+                                </div>
+                            `}
+                        </div>
                     </div>
                 </div>
             `;
