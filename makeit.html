@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>高项核心考点互动备考平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -170,6 +170,15 @@
             width: 100%;
             text-align: left;
         }
+        .mobile-training-panel {
+            display: none;
+        }
+        .mobile-training-panel summary {
+            list-style: none;
+        }
+        .mobile-training-panel summary::-webkit-details-marker {
+            display: none;
+        }
         .desktop-actions {
             display: none;
         }
@@ -200,6 +209,18 @@
             }
             #mobile-chapter-tools.mobile-tools-visible {
                 display: flex !important;
+            }
+            body {
+                touch-action: manipulation;
+            }
+            .training-directory {
+                display: none;
+            }
+            .desktop-training-controls {
+                display: none !important;
+            }
+            .mobile-training-panel {
+                display: block;
             }
             .flip-card-inner.open {
                 max-height: 1600px;
@@ -700,6 +721,13 @@
             document.getElementById('btn-open-menu').addEventListener('click', openMobileMenu);
             document.getElementById('btn-close-menu').addEventListener('click', closeMobileMenu);
             document.getElementById('mobile-backdrop').addEventListener('click', closeMobileMenu);
+            document.addEventListener('dblclick', preventMobileDoubleTapZoom, { passive: false });
+        }
+
+        function preventMobileDoubleTapZoom(event) {
+            if (window.innerWidth <= 767) {
+                event.preventDefault();
+            }
         }
 
         function loadPersistedState() {
@@ -1078,7 +1106,7 @@
                     </div>
 
                     <div class="space-y-6">
-                        <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
+                        <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border desktop-training-controls">
                             <div class="flex flex-wrap gap-2 items-center mb-4">
                                 <button onclick="setProcessTrainingOrderMode('random')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'random' ? 'training-pill' : 'shell-panel-muted'}">随机模式</button>
                                 <button onclick="setProcessTrainingOrderMode('sequence')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'sequence' ? 'training-pill' : 'shell-panel-muted'}">顺序模式</button>
@@ -1090,6 +1118,38 @@
                             <button onclick="setProcessTrainingMode('output_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'output_to_process' ? 'training-pill' : 'shell-panel-muted'}">输出 -> 过程</button>
                         </div>
                     </div>
+
+                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border">
+                            <summary class="px-4 py-4 flex items-center justify-between cursor-pointer">
+                                <span class="font-semibold">训练设置</span>
+                                <span class="text-sm muted-text">展开</span>
+                            </summary>
+                            <div class="px-4 pb-4 border-t shell-border">
+                                <div class="flex flex-wrap gap-2 items-center mb-4 pt-4">
+                                    <button onclick="setProcessTrainingOrderMode('random')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'random' ? 'training-pill' : 'shell-panel-muted'}">随机模式</button>
+                                    <button onclick="setProcessTrainingOrderMode('sequence')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.orderMode === 'sequence' ? 'training-pill' : 'shell-panel-muted'}">顺序模式</button>
+                                </div>
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <button onclick="setProcessTrainingMode('recite')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'recite' ? 'training-pill' : 'shell-panel-muted'}">纯背诵</button>
+                                    <button onclick="setProcessTrainingMode('process_to_answer')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'process_to_answer' ? 'training-pill' : 'shell-panel-muted'}">过程 -> 定义/输出</button>
+                                    <button onclick="setProcessTrainingMode('definition_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'definition_to_process' ? 'training-pill' : 'shell-panel-muted'}">定义 -> 过程</button>
+                                    <button onclick="setProcessTrainingMode('output_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'output_to_process' ? 'training-pill' : 'shell-panel-muted'}">输出 -> 过程</button>
+                                </div>
+                            </div>
+                        </details>
+
+                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border">
+                            <summary class="px-4 py-4 flex items-center justify-between cursor-pointer">
+                                <span class="font-semibold">过程目录</span>
+                                <span class="text-sm muted-text">展开</span>
+                            </summary>
+                            <div class="px-4 pb-4 border-t shell-border training-directory-mobile">
+                                <div class="text-sm muted-text leading-relaxed pt-4 mb-4">按知识领域查看全部过程，点击可直接跳转。颜色标签表示所属过程组。</div>
+                                <div class="space-y-4">
+                                    ${renderProcessTrainingDirectory()}
+                                </div>
+                            </div>
+                        </details>
 
                         <div class="training-card shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
                             <div class="flex flex-wrap gap-3 items-center justify-between mb-5">
