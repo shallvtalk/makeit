@@ -92,6 +92,11 @@
             background: var(--panel-muted);
             border-color: var(--panel-border);
         }
+        .shell-input {
+            background: var(--panel-bg);
+            border-color: var(--panel-border);
+            color: var(--page-text);
+        }
         .shell-soft {
             background: var(--panel-soft);
         }
@@ -129,6 +134,15 @@
         .mobile-backdrop {
             background: rgba(0, 0, 0, 0.35);
             backdrop-filter: blur(2px);
+        }
+        .note-box {
+            background: var(--panel-soft);
+            border: 1px solid var(--panel-border);
+        }
+        .note-textarea {
+            width: 100%;
+            min-height: 6.5rem;
+            resize: vertical;
         }
         .desktop-actions {
             display: none;
@@ -208,6 +222,7 @@
                 <h2 id="current-section-title" class="text-xl md:text-2xl font-bold truncate">学习仪表盘</h2>
             </div>
             <div class="flex items-center gap-2 shrink-0">
+                <button id="notes-visibility-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">无备注版</button>
                 <button id="theme-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">夜间模式</button>
                 <div id="header-actions" class="desktop-actions hidden items-center">
                     <button id="btn-expand-all" class="text-sm px-4 py-2 rounded-md transition duration-200 font-medium mr-2 shell-panel-muted border shell-border">展开全部答案</button>
@@ -267,7 +282,36 @@
 
     <script>
         // Data strictly synchronized with the PDF content.
-        const studyData = [
+        const STORAGE_KEYS = {
+            theme: 'makeit-theme',
+            mastery: 'makeit-mastered',
+            notes: 'makeit-notes',
+            notesVisible: 'makeit-notes-visible'
+        };
+
+        function deepFreeze(obj) {
+            if (!obj || typeof obj !== 'object' || Object.isFrozen(obj)) return obj;
+            Object.freeze(obj);
+            Object.getOwnPropertyNames(obj).forEach((key) => {
+                deepFreeze(obj[key]);
+            });
+            return obj;
+        }
+
+        function cloneStudyData(data) {
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        const ORIGINAL_STUDY_DATA = deepFreeze([
             {
                 chapter: "第6章 项目管理概论",
                 questions: [
@@ -516,24 +560,31 @@
                     { id: "c20_q6", title: "【问6】OPM框架要素?", priority: "🟡", content: "OPM治理、OPM方法论、知识管理和人才管理。", hook: "" }
                 ]
             }
-        ];
+        ]);
+
+        const studyData = cloneStudyData(ORIGINAL_STUDY_DATA);
 
         const state = {
             activeChapterIdx: -1, 
             masteredQs: new Set(),
             openQs: new Set(),
             currentFilter: "ALL",
-            isDarkMode: false
+            isDarkMode: false,
+            notes: {},
+            notesVisible: true
         };
 
         let priorityChartObj = null;
         let chapterChartObj = null;
         function initApp() {
             initTheme();
+            loadPersistedState();
             renderSidebar();
             calculateInitialStats();
             renderDashboardCharts();
             updateGlobalProgress();
+            applyNotesVisibility();
+            exposeConsoleTools();
             
             document.getElementById('btn-expand-all').addEventListener('click', toggleAllCards);
             document.getElementById('btn-expand-all-mobile').addEventListener('click', toggleAllCards);
@@ -543,21 +594,47 @@
             document.getElementById('priority-filter-mobile').addEventListener('change', (e) => {
                 syncFilter(e.target.value);
             });
+            document.getElementById('notes-visibility-toggle').addEventListener('click', toggleNotesVisibility);
             document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
             document.getElementById('btn-open-menu').addEventListener('click', openMobileMenu);
             document.getElementById('btn-close-menu').addEventListener('click', closeMobileMenu);
             document.getElementById('mobile-backdrop').addEventListener('click', closeMobileMenu);
         }
 
+        function loadPersistedState() {
+            try {
+                const savedMastery = JSON.parse(localStorage.getItem(STORAGE_KEYS.mastery) || '[]');
+                if (Array.isArray(savedMastery)) {
+                    state.masteredQs = new Set(savedMastery);
+                }
+            } catch (error) {
+                console.warn('读取掌握进度失败，已跳过。', error);
+            }
+
+            try {
+                const savedNotes = JSON.parse(localStorage.getItem(STORAGE_KEYS.notes) || '{}');
+                if (savedNotes && typeof savedNotes === 'object' && !Array.isArray(savedNotes)) {
+                    state.notes = savedNotes;
+                }
+            } catch (error) {
+                console.warn('读取备注失败，已跳过。', error);
+            }
+
+            const savedNotesVisible = localStorage.getItem(STORAGE_KEYS.notesVisible);
+            if (savedNotesVisible !== null) {
+                state.notesVisible = savedNotesVisible === 'true';
+            }
+        }
+
         function initTheme() {
-            const savedTheme = localStorage.getItem('makeit-theme');
+            const savedTheme = localStorage.getItem(STORAGE_KEYS.theme);
             state.isDarkMode = savedTheme ? savedTheme === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
             applyTheme();
         }
 
         function toggleTheme() {
             state.isDarkMode = !state.isDarkMode;
-            localStorage.setItem('makeit-theme', state.isDarkMode ? 'dark' : 'light');
+            localStorage.setItem(STORAGE_KEYS.theme, state.isDarkMode ? 'dark' : 'light');
             applyTheme();
             renderDashboardCharts();
         }
@@ -565,6 +642,19 @@
         function applyTheme() {
             document.body.classList.toggle('dark', state.isDarkMode);
             document.getElementById('theme-toggle').innerText = state.isDarkMode ? '日间模式' : '夜间模式';
+        }
+
+        function toggleNotesVisibility() {
+            state.notesVisible = !state.notesVisible;
+            localStorage.setItem(STORAGE_KEYS.notesVisible, String(state.notesVisible));
+            applyNotesVisibility();
+            if (state.activeChapterIdx >= 0) {
+                renderCards(state.activeChapterIdx);
+            }
+        }
+
+        function applyNotesVisibility() {
+            document.getElementById('notes-visibility-toggle').innerText = state.notesVisible ? '无备注版' : '显示备注';
         }
 
         function openMobileMenu() {
@@ -670,6 +760,8 @@
             filteredQs.forEach(q => {
                 const isMastered = state.masteredQs.has(q.id);
                 const isOpen = state.openQs.has(q.id);
+                const savedNote = state.notes[q.id] || '';
+                const savedNoteEscaped = escapeHtml(savedNote);
                 const card = document.createElement('div');
                 card.className = `shell-panel rounded-xl shadow-sm border ${isMastered ? 'card-mastered' : ''} overflow-hidden transition-colors duration-300`;
                 
@@ -679,6 +771,27 @@
                     <div class="mt-4 p-3 border rounded-md flex items-start hook-box">
                         <span class="text-amber-500 mr-2 shrink-0">💡</span>
                         <span class="text-sm font-medium">口诀：${q.hook}</span>
+                    </div>`;
+                }
+
+                let noteHtml = '';
+                if (state.notesVisible) {
+                    noteHtml = `
+                    <div class="mt-4 p-4 rounded-lg note-box" onclick="stopCardToggle(event)">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <div class="text-sm font-semibold">我的备注</div>
+                            <div class="text-xs muted-text">${savedNote ? '已保存' : '未填写'}</div>
+                        </div>
+                        <textarea
+                            id="note-input-${q.id}"
+                            class="note-textarea shell-input text-sm rounded-md border px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500"
+                            placeholder="可记录易错点、口诀补充、自己的理解。"
+                            onclick="stopCardToggle(event)"
+                        >${savedNoteEscaped}</textarea>
+                        <div class="flex items-center gap-2 mt-3">
+                            <button onclick="saveNote(event, '${q.id}')" class="text-xs px-3 py-2 rounded-md shell-panel border shell-border transition-colors">保存备注</button>
+                            <button onclick="removeNote(event, '${q.id}')" class="text-xs px-3 py-2 rounded-md shell-panel-muted border shell-border transition-colors">移除备注</button>
+                        </div>
                     </div>`;
                 }
 
@@ -699,6 +812,7 @@
                         <div class="leading-relaxed text-sm md:text-base pt-2 border-t shell-border">
                             ${q.content}
                             ${hookHtml}
+                            ${noteHtml}
                         </div>
                         <div class="pb-4"></div>
                     </div>
@@ -755,11 +869,71 @@
             } else {
                 state.masteredQs.add(id);
             }
+            persistMasteryState();
             if(state.activeChapterIdx >= 0) {
                 renderCards(state.activeChapterIdx);
             }
             updateGlobalProgress();
             updateDashboardCharts();
+        }
+
+        function saveNote(event, id) {
+            event.stopPropagation();
+            const textarea = document.getElementById(`note-input-${id}`);
+            if (!textarea) return;
+            const value = textarea.value.trim();
+            if (value) {
+                state.notes[id] = value;
+            } else {
+                delete state.notes[id];
+            }
+            persistNotesState();
+            if (state.activeChapterIdx >= 0) {
+                renderCards(state.activeChapterIdx);
+            }
+        }
+
+        function removeNote(event, id) {
+            event.stopPropagation();
+            delete state.notes[id];
+            persistNotesState();
+            if (state.activeChapterIdx >= 0) {
+                renderCards(state.activeChapterIdx);
+            }
+        }
+
+        function stopCardToggle(event) {
+            event.stopPropagation();
+        }
+
+        function persistMasteryState() {
+            localStorage.setItem(STORAGE_KEYS.mastery, JSON.stringify([...state.masteredQs]));
+        }
+
+        function persistNotesState() {
+            localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(state.notes));
+        }
+
+        function resetStudyProgress() {
+            state.masteredQs.clear();
+            state.openQs.clear();
+            state.currentFilter = 'ALL';
+            persistMasteryState();
+            syncFilter('ALL');
+            updateGlobalProgress();
+            updateDashboardCharts();
+            if (state.activeChapterIdx >= 0) {
+                renderCards(state.activeChapterIdx);
+            } else {
+                showDashboard();
+            }
+            return '学习进度已重置，备注保留不变。';
+        }
+
+        function exposeConsoleTools() {
+            window.resetStudyProgress = resetStudyProgress;
+            window.originalStudyDataBackup = ORIGINAL_STUDY_DATA;
+            window.cloneStudyDataBackup = () => cloneStudyData(ORIGINAL_STUDY_DATA);
         }
 
         function syncExpandButtonState() {
