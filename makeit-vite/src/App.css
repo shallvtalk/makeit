@@ -1,0 +1,276 @@
+.app-frame {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.app-frame .mantine-AppShell-header {
+  background: rgba(14, 23, 38, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(88, 105, 136, 0.26);
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-AppShell-header {
+  background: rgba(248, 250, 252, 0.94);
+  border-bottom: 1px solid rgba(191, 219, 254, 0.7);
+}
+
+[data-mantine-color-scheme='dark'] .app-frame .mantine-AppShell-header {
+  background: rgba(10, 18, 31, 0.94);
+}
+
+.app-frame .mantine-AppShell-main {
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.08), transparent 24%),
+    linear-gradient(180deg, #142033 0%, #0f1727 100%);
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-AppShell-main {
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.06), transparent 24%),
+    linear-gradient(180deg, #f6fbff 0%, #eef4fb 100%);
+}
+
+[data-mantine-color-scheme='dark'] .app-frame .mantine-AppShell-main {
+  background:
+    radial-gradient(circle at top left, rgba(45, 212, 191, 0.08), transparent 24%),
+    linear-gradient(180deg, #142033 0%, #0f1727 100%);
+}
+
+.app-frame .mantine-AppShell-main > div,
+.app-frame .mantine-AppShell-main > section {
+  height: 100%;
+}
+
+.top-strip {
+  min-height: 59px;
+  flex-wrap: wrap;
+}
+
+.top-strip-left,
+.top-strip-right {
+  flex-wrap: wrap;
+}
+
+.module-panel {
+  height: calc(100vh - 108px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(24, 33, 49, 0.86);
+  border-color: rgba(88, 105, 136, 0.28);
+}
+
+[data-mantine-color-scheme='light'] .module-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.main-scroll-region,
+.questions-scroll,
+.panel-scroll {
+  min-height: 0;
+}
+
+.module-column {
+  height: calc(100vh - 108px);
+  min-height: 0;
+}
+
+.panel-scroll {
+  min-height: 0;
+}
+
+.questions-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(24, 33, 49, 0.86);
+  border-color: rgba(88, 105, 136, 0.28);
+}
+
+[data-mantine-color-scheme='light'] .questions-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.questions-scroll {
+  height: 100%;
+}
+
+.question-answer {
+  line-height: 1.85;
+}
+
+.question-answer br {
+  content: '';
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.process-toolbar {
+  flex-wrap: wrap;
+}
+
+.process-toolbar-control {
+  flex: 1 1 520px;
+}
+
+.process-toolbar-order {
+  flex: 0 0 220px;
+}
+
+.training-main-card {
+  min-height: 0;
+  background: rgba(24, 33, 49, 0.92);
+  border-color: rgba(88, 105, 136, 0.28);
+}
+
+[data-mantine-color-scheme='light'] .training-main-card {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(148, 163, 184, 0.22);
+}
+
+.prompt-copy {
+  white-space: pre-line;
+  line-height: 1.8;
+}
+
+.soft-stat-card {
+  background: rgba(18, 38, 48, 0.92);
+  border: 1px solid rgba(71, 126, 132, 0.34);
+}
+
+[data-mantine-color-scheme='light'] .soft-stat-card {
+  background: linear-gradient(180deg, #f0fdfa 0%, #ecfeff 100%);
+  border: 1px solid rgba(45, 212, 191, 0.2);
+}
+
+.note-card {
+  background: rgba(19, 29, 43, 0.92);
+  border-color: rgba(88, 105, 136, 0.22);
+}
+
+[data-mantine-color-scheme='light'] .note-card {
+  background: #f8fafc;
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+.hook-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.16), rgba(249, 115, 22, 0.16));
+  border: 1px solid rgba(251, 146, 60, 0.3);
+}
+
+[data-mantine-color-scheme='light'] .hook-card {
+  background: linear-gradient(135deg, #fff7d6, #ffedd5);
+  border: 1px solid rgba(251, 146, 60, 0.34);
+}
+
+.hook-label {
+  color: #f59e0b;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+[data-mantine-color-scheme='light'] .hook-label {
+  color: #c2410c;
+}
+
+.hook-text {
+  color: #fde68a;
+}
+
+[data-mantine-color-scheme='light'] .hook-text {
+  color: #9a3412;
+}
+
+.app-frame .mantine-Paper-root,
+.app-frame .mantine-Card-root {
+  color: #e5edf7;
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-Paper-root,
+[data-mantine-color-scheme='light'] .app-frame .mantine-Card-root {
+  color: #1e293b;
+}
+
+.app-frame .mantine-NavLink-root,
+.app-frame .mantine-Accordion-item,
+.app-frame .mantine-Accordion-control,
+.app-frame .mantine-Accordion-panel,
+.app-frame .mantine-SegmentedControl-root {
+  background: rgba(17, 26, 39, 0.75);
+  border-color: rgba(88, 105, 136, 0.22);
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-NavLink-root,
+[data-mantine-color-scheme='light'] .app-frame .mantine-Accordion-item,
+[data-mantine-color-scheme='light'] .app-frame .mantine-Accordion-control,
+[data-mantine-color-scheme='light'] .app-frame .mantine-Accordion-panel,
+[data-mantine-color-scheme='light'] .app-frame .mantine-SegmentedControl-root {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.app-frame .mantine-NavLink-root[data-active='true'] {
+  background: rgba(18, 81, 89, 0.9);
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-NavLink-root[data-active='true'] {
+  background: linear-gradient(135deg, #ccfbf1, #e0f2fe);
+}
+
+.app-frame .mantine-Accordion-item {
+  border-radius: 16px;
+}
+
+.app-frame .mantine-Accordion-control:hover,
+.app-frame .mantine-NavLink-root:hover {
+  background: rgba(27, 39, 58, 0.92);
+}
+
+[data-mantine-color-scheme='light'] .app-frame .mantine-Accordion-control:hover,
+[data-mantine-color-scheme='light'] .app-frame .mantine-NavLink-root:hover {
+  background: rgba(241, 245, 249, 0.95);
+}
+
+@media (max-width: 74em) {
+  .top-strip {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .module-panel {
+    height: auto;
+  }
+
+  .module-column {
+    height: auto;
+  }
+
+  .app-frame {
+    height: auto;
+    overflow: visible;
+  }
+
+  .app-frame .mantine-AppShell-main {
+    height: auto;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 48em) {
+  .app-frame .mantine-AppShell-header {
+    height: auto;
+  }
+
+  .top-strip,
+  .process-toolbar {
+    align-items: stretch;
+  }
+
+  .process-toolbar-control,
+  .process-toolbar-order {
+    flex: 1 1 100%;
+  }
+}
