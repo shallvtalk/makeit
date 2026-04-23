@@ -876,6 +876,12 @@
         }
 
         function getProcessTrainingPrompt(item) {
+            if (state.processTraining.mode === 'recite') {
+                return {
+                    label: '纯背诵模式',
+                    body: `${item.领域}\n${item.过程}`
+                };
+            }
             if (state.processTraining.mode === 'definition_to_process') {
                 return {
                     label: '根据定义回忆过程',
@@ -895,6 +901,15 @@
         }
 
         function getProcessTrainingAnswer(item) {
+            if (state.processTraining.mode === 'recite') {
+                return `
+                    <div class="text-sm muted-text mb-2">完整背诵内容</div>
+                    <div class="font-semibold text-lg mb-3">${item.领域} / ${item.过程}</div>
+                    <div class="text-sm leading-relaxed"><strong>定义：</strong>${item.定义}</div>
+                    <div class="text-sm leading-relaxed mt-3"><strong>主要输出：</strong>${item["主要输出"]}</div>
+                    <div class="text-sm leading-relaxed mt-3"><strong>主要作用：</strong>${item["主要作用"]}</div>
+                `;
+            }
             if (state.processTraining.mode === 'definition_to_process') {
                 return `
                     <div class="text-sm muted-text mb-2">答案</div>
@@ -931,6 +946,7 @@
                 <div class="space-y-6">
                     <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
                         <div class="flex flex-wrap gap-2 items-center">
+                            <button onclick="setProcessTrainingMode('recite')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'recite' ? 'training-pill' : 'shell-panel-muted'}">纯背诵</button>
                             <button onclick="setProcessTrainingMode('process_to_answer')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'process_to_answer' ? 'training-pill' : 'shell-panel-muted'}">过程 -> 定义/输出</button>
                             <button onclick="setProcessTrainingMode('definition_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'definition_to_process' ? 'training-pill' : 'shell-panel-muted'}">定义 -> 过程</button>
                             <button onclick="setProcessTrainingMode('output_to_process')" class="text-sm px-3 py-2 rounded-md border shell-border ${state.processTraining.mode === 'output_to_process' ? 'training-pill' : 'shell-panel-muted'}">输出 -> 过程</button>
@@ -951,7 +967,14 @@
                             <div class="training-prompt text-lg md:text-xl font-semibold leading-relaxed">${prompt.body}</div>
                         </div>
 
-                        ${state.processTraining.answerVisible ? `
+                        ${state.processTraining.mode === 'recite' ? `
+                            <div class="note-box rounded-xl p-4 mb-5">
+                                ${getProcessTrainingAnswer(item)}
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <button onclick="nextProcessTrainingCard()" class="text-sm px-4 py-2 rounded-md training-pill">下一题</button>
+                            </div>
+                        ` : state.processTraining.answerVisible ? `
                             <div class="note-box rounded-xl p-4 mb-5">
                                 ${getProcessTrainingAnswer(item)}
                             </div>
