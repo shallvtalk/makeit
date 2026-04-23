@@ -172,6 +172,12 @@
             text-align: left;
             box-sizing: border-box;
         }
+        .training-directory-mobile button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            box-sizing: border-box;
+        }
         .mobile-training-panel {
             display: none;
         }
@@ -693,7 +699,11 @@
                 mode: 'process_to_answer',
                 orderMode: 'random',
                 sessionCorrect: 0,
-                sessionTotal: 0
+                sessionTotal: 0,
+                mobilePanels: {
+                    settingsOpen: false,
+                    directoryOpen: false
+                }
             }
         };
 
@@ -946,6 +956,10 @@
             renderProcessTraining();
         }
 
+        function setTrainingPanelOpen(panel, isOpen) {
+            state.processTraining.mobilePanels[panel] = isOpen;
+        }
+
         function getProcessGroupMeta(processName) {
             const processGroupMap = {
                 "制定项目章程": { label: "启动", color: "#0f766e" },
@@ -1121,7 +1135,7 @@
                         </div>
                     </div>
 
-                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border">
+                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border" ontoggle="setTrainingPanelOpen('settingsOpen', this.open)" ${state.processTraining.mobilePanels.settingsOpen ? 'open' : ''}>
                             <summary class="px-4 py-4 flex items-center justify-between cursor-pointer">
                                 <span class="font-semibold">训练设置</span>
                                 <span class="text-sm muted-text">展开</span>
@@ -1140,7 +1154,7 @@
                             </div>
                         </details>
 
-                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border">
+                        <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border" ontoggle="setTrainingPanelOpen('directoryOpen', this.open)" ${state.processTraining.mobilePanels.directoryOpen ? 'open' : ''}>
                             <summary class="px-4 py-4 flex items-center justify-between cursor-pointer">
                                 <span class="font-semibold">过程目录</span>
                                 <span class="text-sm muted-text">展开</span>
