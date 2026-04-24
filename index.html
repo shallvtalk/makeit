@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>高项核心考点互动备考平台</title>
+    <title>资料看板</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -253,12 +253,8 @@
     <div id="mobile-backdrop" class="mobile-backdrop fixed inset-0 z-20 hidden md:hidden"></div>
 
     <aside id="sidebar" class="shell-panel fixed inset-y-0 left-0 w-72 border-r flex flex-col h-full flex-shrink-0 z-30 shadow-lg transition-transform duration-300 -translate-x-full md:translate-x-0 md:static md:z-10">
-        <div class="p-6 border-b shell-border">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <h1 class="text-xl font-bold tracking-tight">高项核心考点</h1>
-                    <p class="text-xs muted-text mt-1">信息系统项目管理师备考通</p>
-                </div>
+        <div class="p-4 border-b shell-border">
+            <div class="flex items-start justify-end gap-4 min-h-8">
                 <button id="btn-close-menu" class="md:hidden px-2 py-1 rounded-md shell-panel-muted text-sm">关闭</button>
             </div>
         </div>
@@ -277,7 +273,7 @@
         <header class="shell-panel px-4 md:px-8 py-4 md:py-5 border-b shell-border flex justify-between items-center shadow-sm z-10 gap-3">
             <div class="flex items-center gap-3 min-w-0">
                 <button id="btn-open-menu" class="md:hidden px-3 py-2 rounded-md shell-panel-muted text-sm">目录</button>
-                <h2 id="current-section-title" class="text-xl md:text-2xl font-bold truncate">学习仪表盘</h2>
+                <h2 id="current-section-title" class="sr-only">学习仪表盘</h2>
             </div>
             <div class="flex items-center gap-2 shrink-0">
                 <button id="notes-visibility-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">无备注版</button>
@@ -1107,6 +1103,8 @@
 
         function renderProcessTraining() {
             const container = document.getElementById('process-training-container');
+            const previousDirectoryScroll = container.querySelector('.training-directory')?.scrollTop || 0;
+            const previousMobileDirectoryScroll = container.querySelector('.training-directory-mobile')?.scrollTop || 0;
             const item = PROCESS_TRAINING_DATA[state.processTraining.currentIndex];
             const prompt = getProcessTrainingPrompt(item);
             const processGroupMeta = getProcessGroupMeta(item.过程);
@@ -1214,6 +1212,14 @@
                     </div>
                 </div>
             `;
+            const directory = container.querySelector('.training-directory');
+            const mobileDirectory = container.querySelector('.training-directory-mobile');
+            if (directory) {
+                directory.scrollTop = previousDirectoryScroll;
+            }
+            if (mobileDirectory) {
+                mobileDirectory.scrollTop = previousMobileDirectoryScroll;
+            }
         }
 
         function renderCards(idx) {
