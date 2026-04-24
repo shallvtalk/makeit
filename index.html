@@ -286,18 +286,26 @@
                         <option value="🟡">🟡 背诵</option>
                         <option value="🟢">🟢 熟练</option>
                     </select>
+                    <label class="text-sm px-3 py-2 ml-2 rounded-md shell-panel-muted border shell-border flex items-center gap-2 cursor-pointer select-none">
+                        <input id="unmastered-filter" type="checkbox" class="accent-amber-600">
+                        <span>仅看未掌握</span>
+                    </label>
                 </div>
             </div>
         </header>
 
-        <div id="mobile-chapter-tools" class="hidden md:hidden px-4 py-3 border-b shell-border shell-panel gap-2 flex">
-            <button id="btn-expand-all-mobile" class="flex-1 text-sm px-4 py-2 rounded-md transition duration-200 font-medium shell-panel-muted border shell-border">展开全部答案</button>
-            <select id="priority-filter-mobile" class="flex-1 text-sm shell-panel border shell-border px-3 py-2 rounded-md outline-none">
+        <div id="mobile-chapter-tools" class="hidden md:hidden px-4 py-3 border-b shell-border shell-panel gap-2 flex flex-wrap">
+            <button id="btn-expand-all-mobile" class="flex-1 min-w-[9rem] text-sm px-4 py-2 rounded-md transition duration-200 font-medium shell-panel-muted border shell-border">展开全部答案</button>
+            <select id="priority-filter-mobile" class="flex-1 min-w-[9rem] text-sm shell-panel border shell-border px-3 py-2 rounded-md outline-none">
                     <option value="ALL">全部优先级</option>
                     <option value="🔴">🔴 必背</option>
                     <option value="🟡">🟡 背诵</option>
                     <option value="🟢">🟢 熟练</option>
                 </select>
+                <label class="flex-1 min-w-[9rem] text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border flex items-center justify-center gap-2 cursor-pointer select-none">
+                    <input id="unmastered-filter-mobile" type="checkbox" class="accent-amber-600">
+                    <span>仅看未掌握</span>
+                </label>
             </div>
 
         <div id="main-content-scroll" class="flex-1 overflow-y-auto p-4 md:p-8">
@@ -689,6 +697,7 @@
             masteredQs: new Set(),
             openQs: new Set(),
             currentFilter: "ALL",
+            showUnmasteredOnly: false,
             isDarkMode: false,
             notes: {},
             notesVisible: true,
@@ -725,6 +734,12 @@
             });
             document.getElementById('priority-filter-mobile').addEventListener('change', (e) => {
                 syncFilter(e.target.value);
+            });
+            document.getElementById('unmastered-filter').addEventListener('change', (e) => {
+                syncUnmasteredFilter(e.target.checked);
+            });
+            document.getElementById('unmastered-filter-mobile').addEventListener('change', (e) => {
+                syncUnmasteredFilter(e.target.checked);
             });
             document.getElementById('btn-open-process-training').addEventListener('click', showProcessTraining);
             document.getElementById('notes-visibility-toggle').addEventListener('click', toggleNotesVisibility);
@@ -820,6 +835,13 @@
             document.getElementById('priority-filter').value = value;
             document.getElementById('priority-filter-mobile').value = value;
             if(state.activeChapterIdx >= 0) renderCards(state.activeChapterIdx);
+        }
+
+        function syncUnmasteredFilter(checked) {
+            state.showUnmasteredOnly = checked;
+            document.getElementById('unmastered-filter').checked = checked;
+            document.getElementById('unmastered-filter-mobile').checked = checked;
+            if (state.activeChapterIdx >= 0) renderCards(state.activeChapterIdx);
         }
 
         function renderSidebar() {
@@ -1229,10 +1251,14 @@
             const chapter = studyData[idx];
             const filter = state.currentFilter;
             
-            const filteredQs = chapter.questions.filter(q => filter === "ALL" || q.priority === filter);
+            const filteredQs = chapter.questions.filter(q => {
+                const matchesPriority = filter === "ALL" || q.priority === filter;
+                const matchesMastery = !state.showUnmasteredOnly || !state.masteredQs.has(q.id);
+                return matchesPriority && matchesMastery;
+            });
 
             if(filteredQs.length === 0) {
-                container.innerHTML = '<p class="muted-text text-center py-8">该分类下暂无考点。</p>';
+                container.innerHTML = '<p class="muted-text text-center py-8">当前筛选下暂无考点。</p>';
                 syncExpandButtonState();
                 return;
             }
@@ -1398,8 +1424,10 @@
             state.masteredQs.clear();
             state.openQs.clear();
             state.currentFilter = 'ALL';
+            state.showUnmasteredOnly = false;
             persistMasteryState();
             syncFilter('ALL');
+            syncUnmasteredFilter(false);
             updateGlobalProgress();
             updateDashboardCharts();
             if (state.activeChapterIdx >= 0) {
