@@ -128,6 +128,27 @@
         .theme-toggle {
             min-width: 5.75rem;
         }
+        .sidebar-toggle {
+            min-width: 2.5rem;
+        }
+        .toolbar-separator {
+            width: 1px;
+            height: 1.75rem;
+            background: var(--panel-border);
+            margin: 0 0.35rem;
+        }
+        body.sidebar-collapsed #sidebar {
+            width: 4.5rem;
+        }
+        body.sidebar-collapsed .sidebar-label,
+        body.sidebar-collapsed .sidebar-progress {
+            display: none;
+        }
+        body.sidebar-collapsed #sidebar-nav button {
+            justify-content: center;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
         .mobile-menu-open {
             transform: translateX(0);
         }
@@ -207,6 +228,13 @@
             body.menu-open {
                 overflow: hidden;
             }
+            body.sidebar-collapsed #sidebar {
+                width: min(22rem, 86vw);
+            }
+            body.sidebar-collapsed .sidebar-label,
+            body.sidebar-collapsed .sidebar-progress {
+                display: block;
+            }
             #sidebar {
                 width: min(22rem, 86vw);
                 max-width: 86vw;
@@ -223,6 +251,9 @@
             }
             body {
                 touch-action: manipulation;
+            }
+            .toolbar-separator {
+                display: none !important;
             }
             .training-directory {
                 display: none;
@@ -257,7 +288,7 @@
         </div>
         <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-hide py-4">
         </nav>
-        <div class="p-4 border-t shell-border shell-panel-muted">
+        <div class="sidebar-progress p-4 border-t shell-border shell-panel-muted">
             <div class="text-xs muted-text mb-2">全局掌握进度</div>
             <div class="w-full rounded-full h-2.5" style="background: var(--panel-border);">
                 <div id="global-progress-bar" class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
@@ -269,14 +300,14 @@
     <main class="flex-1 flex flex-col min-w-0 h-full relative overflow-hidden">
         <header class="shell-panel px-4 md:px-6 py-2 md:py-3 border-b shell-border flex justify-between items-center shadow-sm z-10 gap-3">
             <div class="flex items-center gap-3 min-w-0">
+                <button id="btn-toggle-sidebar" class="sidebar-toggle hidden md:inline-flex items-center justify-center text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border">☰</button>
                 <button id="btn-open-menu" class="md:hidden px-3 py-2 rounded-md shell-panel-muted text-sm">目录</button>
                 <h2 id="current-section-title" class="sr-only">学习仪表盘</h2>
             </div>
-            <div class="flex items-center gap-2 shrink-0 min-w-0">
-                <div id="process-training-actions" class="desktop-actions hidden items-center gap-2"></div>
-                <button id="notes-visibility-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">无备注版</button>
-                <button id="theme-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">夜间模式</button>
-                <div id="header-actions" class="desktop-actions hidden items-center">
+            <div class="flex items-center justify-end gap-2 shrink min-w-0">
+                <div id="process-training-actions" class="desktop-actions hidden items-center gap-2 min-w-0"></div>
+                <div id="header-actions" class="desktop-actions hidden items-center min-w-0">
+                    <button id="notes-visibility-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200 mr-2">无备注版</button>
                     <button id="btn-expand-all" class="text-sm px-4 py-2 rounded-md transition duration-200 font-medium mr-2 shell-panel-muted border shell-border">展开全部答案</button>
                     <select id="priority-filter" class="text-sm shell-panel border shell-border px-3 py-2 rounded-md outline-none focus:ring-2 focus:ring-amber-500">
                         <option value="ALL">全部优先级</option>
@@ -289,10 +320,13 @@
                         <span>仅看未掌握</span>
                     </label>
                 </div>
+                <div id="toolbar-separator" class="toolbar-separator hidden"></div>
+                <button id="theme-toggle" class="theme-toggle text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border transition duration-200">夜间模式</button>
             </div>
         </header>
 
         <div id="mobile-chapter-tools" class="hidden md:hidden px-4 py-3 border-b shell-border shell-panel gap-2 flex flex-wrap">
+            <button id="notes-visibility-toggle-mobile" class="flex-1 min-w-[9rem] text-sm px-4 py-2 rounded-md transition duration-200 font-medium shell-panel-muted border shell-border">无备注版</button>
             <button id="btn-expand-all-mobile" class="flex-1 min-w-[9rem] text-sm px-4 py-2 rounded-md transition duration-200 font-medium shell-panel-muted border shell-border">展开全部答案</button>
             <select id="priority-filter-mobile" class="flex-1 min-w-[9rem] text-sm shell-panel border shell-border px-3 py-2 rounded-md outline-none">
                     <option value="ALL">全部优先级</option>
@@ -360,7 +394,13 @@
             theme: 'makeit-theme',
             mastery: 'makeit-mastered',
             notes: 'makeit-notes',
-            notesVisible: 'makeit-notes-visible'
+            notesVisible: 'makeit-notes-visible',
+            activeView: 'makeit-active-view',
+            activeChapterIdx: 'makeit-active-chapter-idx',
+            processTrainingIndex: 'makeit-process-training-index',
+            contentScrollTop: 'makeit-content-scroll-top',
+            processDirectoryScrollTop: 'makeit-process-directory-scroll-top',
+            sidebarCollapsed: 'makeit-sidebar-collapsed'
         };
 
         function deepFreeze(obj) {
@@ -696,14 +736,16 @@
             openQs: new Set(),
             currentFilter: "ALL",
             showUnmasteredOnly: false,
+            activeView: 'dashboard',
+            sidebarCollapsed: false,
             isDarkMode: false,
             notes: {},
             notesVisible: true,
             processTraining: {
                 currentIndex: 0,
                 answerVisible: false,
-                mode: 'process_to_answer',
-                orderMode: 'random',
+                mode: 'recite',
+                orderMode: 'sequence',
                 sessionCorrect: 0,
                 sessionTotal: 0,
                 mobilePanels: {
@@ -723,6 +765,7 @@
             renderDashboardCharts();
             updateGlobalProgress();
             applyNotesVisibility();
+            applySidebarCollapsed();
             exposeConsoleTools();
             
             document.getElementById('btn-expand-all').addEventListener('click', toggleAllCards);
@@ -741,11 +784,15 @@
             });
             document.getElementById('btn-open-process-training').addEventListener('click', showProcessTraining);
             document.getElementById('notes-visibility-toggle').addEventListener('click', toggleNotesVisibility);
+            document.getElementById('notes-visibility-toggle-mobile').addEventListener('click', toggleNotesVisibility);
             document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            document.getElementById('btn-toggle-sidebar').addEventListener('click', toggleSidebarCollapsed);
             document.getElementById('btn-open-menu').addEventListener('click', openMobileMenu);
             document.getElementById('btn-close-menu').addEventListener('click', closeMobileMenu);
             document.getElementById('mobile-backdrop').addEventListener('click', closeMobileMenu);
+            window.addEventListener('beforeunload', persistCurrentPosition);
             document.addEventListener('dblclick', preventMobileDoubleTapZoom, { passive: false });
+            restoreLastView();
         }
 
         function preventMobileDoubleTapZoom(event) {
@@ -777,6 +824,23 @@
             if (savedNotesVisible !== null) {
                 state.notesVisible = savedNotesVisible === 'true';
             }
+
+            const savedView = localStorage.getItem(STORAGE_KEYS.activeView);
+            if (['dashboard', 'chapter', 'process'].includes(savedView)) {
+                state.activeView = savedView;
+            }
+
+            const savedChapterIdx = Number(localStorage.getItem(STORAGE_KEYS.activeChapterIdx));
+            if (Number.isInteger(savedChapterIdx) && savedChapterIdx >= 0 && savedChapterIdx < studyData.length) {
+                state.activeChapterIdx = savedChapterIdx;
+            }
+
+            const savedProcessTrainingIndex = Number(localStorage.getItem(STORAGE_KEYS.processTrainingIndex));
+            if (Number.isInteger(savedProcessTrainingIndex) && savedProcessTrainingIndex >= 0 && savedProcessTrainingIndex < PROCESS_TRAINING_DATA.length) {
+                state.processTraining.currentIndex = savedProcessTrainingIndex;
+            }
+
+            state.sidebarCollapsed = localStorage.getItem(STORAGE_KEYS.sidebarCollapsed) === 'true';
         }
 
         function initTheme() {
@@ -807,7 +871,24 @@
         }
 
         function applyNotesVisibility() {
-            document.getElementById('notes-visibility-toggle').innerText = state.notesVisible ? '无备注版' : '显示备注';
+            const text = state.notesVisible ? '无备注版' : '显示备注';
+            document.getElementById('notes-visibility-toggle').innerText = text;
+            document.getElementById('notes-visibility-toggle-mobile').innerText = text;
+        }
+
+        function toggleSidebarCollapsed() {
+            state.sidebarCollapsed = !state.sidebarCollapsed;
+            localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, String(state.sidebarCollapsed));
+            applySidebarCollapsed();
+        }
+
+        function applySidebarCollapsed() {
+            document.body.classList.toggle('sidebar-collapsed', state.sidebarCollapsed);
+            const toggle = document.getElementById('btn-toggle-sidebar');
+            if (toggle) {
+                toggle.innerText = state.sidebarCollapsed ? '›' : '‹';
+                toggle.title = state.sidebarCollapsed ? '展开菜单' : '收起菜单';
+            }
         }
 
         function openMobileMenu() {
@@ -842,12 +923,59 @@
             if (state.activeChapterIdx >= 0) renderCards(state.activeChapterIdx);
         }
 
+        function persistCurrentPosition() {
+            localStorage.setItem(STORAGE_KEYS.activeView, state.activeView);
+            if (state.activeChapterIdx >= 0) {
+                localStorage.setItem(STORAGE_KEYS.activeChapterIdx, String(state.activeChapterIdx));
+            }
+            localStorage.setItem(STORAGE_KEYS.processTrainingIndex, String(state.processTraining.currentIndex));
+            const contentScroll = document.getElementById('main-content-scroll');
+            if (contentScroll) {
+                localStorage.setItem(STORAGE_KEYS.contentScrollTop, String(contentScroll.scrollTop));
+            }
+            const processDirectory = document.querySelector('.training-directory');
+            if (processDirectory) {
+                localStorage.setItem(STORAGE_KEYS.processDirectoryScrollTop, String(processDirectory.scrollTop));
+            }
+        }
+
+        function restoreScrollPositions() {
+            requestAnimationFrame(() => {
+                const contentScroll = document.getElementById('main-content-scroll');
+                const savedContentScrollTop = Number(localStorage.getItem(STORAGE_KEYS.contentScrollTop));
+                if (contentScroll && Number.isFinite(savedContentScrollTop)) {
+                    contentScroll.scrollTop = savedContentScrollTop;
+                }
+                const processDirectory = document.querySelector('.training-directory');
+                const savedProcessDirectoryScrollTop = Number(localStorage.getItem(STORAGE_KEYS.processDirectoryScrollTop));
+                if (processDirectory && Number.isFinite(savedProcessDirectoryScrollTop)) {
+                    processDirectory.scrollTop = savedProcessDirectoryScrollTop;
+                }
+            });
+        }
+
+        function restoreLastView() {
+            if (state.activeView === 'process') {
+                showProcessTraining(false);
+                restoreScrollPositions();
+                return;
+            }
+            if (state.activeView === 'chapter' && state.activeChapterIdx >= 0) {
+                showChapter(state.activeChapterIdx, false);
+                restoreScrollPositions();
+                return;
+            }
+            showDashboard(false);
+            restoreScrollPositions();
+        }
+
         function renderSidebar() {
             const nav = document.getElementById('sidebar-nav');
             
             const homeBtn = document.createElement('button');
-            homeBtn.className = 'w-full text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 nav-active';
-            homeBtn.innerHTML = '<span class="mr-2">📊</span> 学习仪表盘';
+            homeBtn.dataset.view = 'dashboard';
+            homeBtn.className = 'w-full flex items-center text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 nav-active';
+            homeBtn.innerHTML = '<span class="mr-2 shrink-0">📊</span><span class="sidebar-label">学习仪表盘</span>';
             homeBtn.onclick = () => {
                 setActiveNav(homeBtn);
                 showDashboard();
@@ -856,9 +984,10 @@
             nav.appendChild(homeBtn);
 
             const trainingBtn = document.createElement('button');
-            trainingBtn.className = 'w-full text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 border-r-4 border-transparent';
+            trainingBtn.dataset.view = 'process';
+            trainingBtn.className = 'w-full flex items-center text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 border-r-4 border-transparent';
             trainingBtn.style.color = 'var(--muted-text)';
-            trainingBtn.innerHTML = '<span class="mr-2">🧠</span> 过程-定义-输出训练';
+            trainingBtn.innerHTML = '<span class="mr-2 shrink-0">🧠</span><span class="sidebar-label">过程-定义-输出训练</span>';
             trainingBtn.onclick = () => {
                 setActiveNav(trainingBtn);
                 showProcessTraining();
@@ -868,9 +997,11 @@
 
             studyData.forEach((ch, idx) => {
                 const btn = document.createElement('button');
-                btn.className = 'w-full text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 border-r-4 border-transparent';
+                btn.dataset.view = 'chapter';
+                btn.dataset.chapterIdx = String(idx);
+                btn.className = 'w-full flex items-center text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 border-r-4 border-transparent';
                 btn.style.color = 'var(--muted-text)';
-                btn.innerHTML = `<span class="truncate block">${ch.chapter}</span>`;
+                btn.innerHTML = `<span class="mr-2 shrink-0 text-xs">${idx + 6}</span><span class="sidebar-label truncate block">${ch.chapter}</span>`;
                 btn.onclick = () => {
                     setActiveNav(btn);
                     showChapter(idx);
@@ -893,39 +1024,61 @@
             activeElement.style.color = 'var(--page-text)';
         }
 
-        function showDashboard() {
+        function setActiveNavForView(view, chapterIdx = null) {
+            const selector = view === 'chapter'
+                ? `#sidebar-nav button[data-view="chapter"][data-chapter-idx="${chapterIdx}"]`
+                : `#sidebar-nav button[data-view="${view}"]`;
+            const activeElement = document.querySelector(selector);
+            if (activeElement) {
+                setActiveNav(activeElement);
+            }
+        }
+
+        function showDashboard(shouldPersist = true) {
             state.activeChapterIdx = -1;
+            state.activeView = 'dashboard';
+            setActiveNavForView('dashboard');
             document.getElementById('dashboard-view').classList.remove('hidden');
             document.getElementById('chapter-view').classList.add('hidden');
             document.getElementById('process-training-view').classList.add('hidden');
             document.getElementById('header-actions').classList.add('hidden');
             document.getElementById('process-training-actions').classList.add('hidden');
+            document.getElementById('toolbar-separator').classList.add('hidden');
             setMobileChapterTools(false);
             document.getElementById('current-section-title').innerText = "学习仪表盘";
             updateDashboardCharts();
+            if (shouldPersist) persistCurrentPosition();
         }
 
-        function showChapter(idx) {
+        function showChapter(idx, shouldPersist = true) {
             state.activeChapterIdx = idx;
+            state.activeView = 'chapter';
+            setActiveNavForView('chapter', idx);
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('chapter-view').classList.remove('hidden');
             document.getElementById('process-training-view').classList.add('hidden');
             document.getElementById('header-actions').classList.remove('hidden');
             document.getElementById('process-training-actions').classList.add('hidden');
+            document.getElementById('toolbar-separator').classList.remove('hidden');
             setMobileChapterTools(true);
             document.getElementById('current-section-title').innerText = studyData[idx].chapter;
             renderCards(idx);
+            if (shouldPersist) persistCurrentPosition();
         }
 
-        function showProcessTraining() {
+        function showProcessTraining(shouldPersist = true) {
+            state.activeView = 'process';
+            setActiveNavForView('process');
             document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('chapter-view').classList.add('hidden');
             document.getElementById('process-training-view').classList.remove('hidden');
             document.getElementById('header-actions').classList.add('hidden');
             document.getElementById('process-training-actions').classList.remove('hidden');
+            document.getElementById('toolbar-separator').classList.remove('hidden');
             setMobileChapterTools(false);
             document.getElementById('current-section-title').innerText = "过程-定义-输出训练";
             renderProcessTraining();
+            if (shouldPersist) persistCurrentPosition();
         }
 
         function setProcessTrainingMode(mode) {
@@ -955,12 +1108,14 @@
                 state.processTraining.currentIndex = nextIndex;
             }
             state.processTraining.answerVisible = false;
+            persistCurrentPosition();
             renderProcessTraining();
         }
 
         function previousProcessTrainingCard() {
             state.processTraining.currentIndex = (state.processTraining.currentIndex - 1 + PROCESS_TRAINING_DATA.length) % PROCESS_TRAINING_DATA.length;
             state.processTraining.answerVisible = false;
+            persistCurrentPosition();
             renderProcessTraining();
         }
 
@@ -975,6 +1130,7 @@
         function jumpToProcessTraining(index) {
             state.processTraining.currentIndex = index;
             state.processTraining.answerVisible = false;
+            persistCurrentPosition();
             renderProcessTraining();
         }
 
