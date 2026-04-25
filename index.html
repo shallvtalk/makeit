@@ -186,6 +186,12 @@
         .training-directory {
             overflow-y: auto;
         }
+        .process-training-layout {
+            min-height: 0;
+        }
+        .process-training-main {
+            min-height: 0;
+        }
         .training-directory button {
             display: block;
             width: 100%;
@@ -214,8 +220,21 @@
             .desktop-actions {
                 display: flex;
             }
+            #process-training-view,
+            #process-training-container,
+            .process-training-layout {
+                height: 100%;
+            }
+            .process-training-layout {
+                overflow: hidden;
+            }
             .training-directory {
-                max-height: calc(100vh - 6rem);
+                height: 100%;
+                max-height: none;
+                padding-right: 0.25rem;
+            }
+            .process-training-main {
+                overflow-y: auto;
                 padding-right: 0.25rem;
             }
         }
@@ -292,11 +311,16 @@
         <nav id="sidebar-nav" class="flex-1 overflow-y-auto scrollbar-hide py-4">
         </nav>
         <div class="sidebar-progress p-4 border-t shell-border shell-panel-muted">
-            <div class="text-xs muted-text mb-2">全局掌握进度</div>
+            <div class="text-xs muted-text mb-2">知识点掌握</div>
             <div class="w-full rounded-full h-2.5" style="background: var(--panel-border);">
-                <div id="global-progress-bar" class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
+                <div id="question-progress-bar" class="bg-emerald-600 h-2.5 rounded-full" style="width: 0%"></div>
             </div>
-            <div id="global-progress-text" class="text-right text-xs mt-1 font-medium">0%</div>
+            <div id="question-progress-text" class="text-right text-xs mt-1 font-medium">0%</div>
+            <div class="text-xs muted-text mt-4 mb-2">过程掌握</div>
+            <div class="w-full rounded-full h-2.5" style="background: var(--panel-border);">
+                <div id="process-progress-bar" class="bg-amber-500 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+            <div id="process-progress-text" class="text-right text-xs mt-1 font-medium">0%</div>
         </div>
     </aside>
 
@@ -1316,12 +1340,12 @@
             renderProcessTrainingActions();
 
             container.innerHTML = `
-                <div class="grid grid-cols-1 lg:grid-cols-[24rem_minmax(0,1fr)] gap-6 xl:gap-8 items-start">
+                <div class="process-training-layout grid grid-cols-1 lg:grid-cols-[24rem_minmax(0,1fr)] gap-6 xl:gap-8 items-start">
                     <div class="training-directory space-y-4">
                         ${renderProcessTrainingDirectory()}
                     </div>
 
-                    <div class="space-y-6">
+                    <div class="process-training-main space-y-6">
                         <details class="mobile-training-panel shell-panel rounded-xl shadow-sm border" ontoggle="setTrainingPanelOpen('settingsOpen', this.open)" ${state.processTraining.mobilePanels.settingsOpen ? 'open' : ''}>
                             <summary class="px-4 py-4 flex items-center justify-between cursor-pointer">
                                 <span class="font-semibold">训练设置</span>
@@ -1612,13 +1636,19 @@
         }
 
         function updateGlobalProgress() {
-            let total = 0;
-            studyData.forEach(ch => total += ch.questions.length);
-            const mastered = state.masteredQs.size;
-            const pct = total === 0 ? 0 : Math.round((mastered / total) * 100);
-            
-            document.getElementById('global-progress-bar').style.width = `${pct}%`;
-            document.getElementById('global-progress-text').innerText = `${pct}% (${mastered}/${total})`;
+            let questionTotal = 0;
+            studyData.forEach(ch => questionTotal += ch.questions.length);
+            const questionMastered = state.masteredQs.size;
+            const questionPct = questionTotal === 0 ? 0 : Math.round((questionMastered / questionTotal) * 100);
+
+            const processTotal = PROCESS_TRAINING_DATA.length;
+            const processMastered = state.processMastered.size;
+            const processPct = processTotal === 0 ? 0 : Math.round((processMastered / processTotal) * 100);
+
+            document.getElementById('question-progress-bar').style.width = `${questionPct}%`;
+            document.getElementById('question-progress-text').innerText = `${questionPct}% (${questionMastered}/${questionTotal})`;
+            document.getElementById('process-progress-bar').style.width = `${processPct}%`;
+            document.getElementById('process-progress-text').innerText = `${processPct}% (${processMastered}/${processTotal})`;
         }
 
         const chartColors = {
