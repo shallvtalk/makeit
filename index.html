@@ -220,6 +220,9 @@
             }
         }
         @media (max-width: 767px) {
+            header {
+                padding-top: calc(0.75rem + env(safe-area-inset-top, 0px)) !important;
+            }
             body {
                 height: auto;
                 min-height: 100vh;
@@ -342,37 +345,24 @@
 
         <div id="main-content-scroll" class="flex-1 overflow-y-auto p-4 md:p-5">
             <div id="dashboard-view" class="max-w-6xl mx-auto block">
-                <div class="mb-8">
-                    <h3 class="text-2xl md:text-3xl font-bold mb-4">欢迎来到高项备考互动平台</h3>
-                    <p class="muted-text leading-relaxed text-base md:text-lg">
-                        本平台包含原文档 100% 完整的 173 个理论必背考点。请利用侧边栏导航，结合主动回想（Active Recall）机制，点击题目检验记忆。标记“已掌握”以更新仪表盘数据。
-                    </p>
-                </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
-                        <h4 class="text-lg font-semibold mb-2">考点优先级分布</h4>
-                        <p class="text-sm muted-text mb-6">了解不同重要程度的考点比例，合理分配复习精力。</p>
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <h4 class="text-lg font-semibold">过程掌握程度</h4>
+                            <button onclick="showProcessTraining()" class="text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border">专项训练</button>
+                        </div>
                         <div class="chart-container">
-                            <canvas id="priorityChart"></canvas>
+                            <canvas id="processChart"></canvas>
                         </div>
                     </div>
                     <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
-                        <h4 class="text-lg font-semibold mb-2">各章节考点数量</h4>
-                        <p class="text-sm muted-text mb-6">直观对比各章知识点密度，攻克重难点章节。</p>
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <h4 class="text-lg font-semibold">章节掌握程度</h4>
+                            <button onclick="showChapter(0)" class="text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border">章节复习</button>
+                        </div>
                         <div class="chart-container">
                             <canvas id="chapterChart"></canvas>
                         </div>
-                    </div>
-                </div>
-
-                <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
-                    <div class="flex items-start justify-between gap-4 flex-col md:flex-row">
-                        <div>
-                            <h4 class="text-lg font-semibold mb-2">过程-定义-输出训练</h4>
-                            <p class="text-sm muted-text leading-relaxed">专门训练十大知识领域中的过程定义、主要输出和主要作用。适合做碎片化抽问、闭眼回忆和考前速刷。</p>
-                        </div>
-                        <button id="btn-open-process-training" class="text-sm px-4 py-2 rounded-md transition duration-200 font-medium shell-panel-muted border shell-border whitespace-nowrap">开始训练</button>
                     </div>
                 </div>
             </div>
@@ -394,6 +384,7 @@
             theme: 'makeit-theme',
             mastery: 'makeit-mastered',
             notes: 'makeit-notes',
+            processMastery: 'makeit-process-mastered',
             notesVisible: 'makeit-notes-visible',
             activeView: 'makeit-active-view',
             activeChapterIdx: 'makeit-active-chapter-idx',
@@ -733,6 +724,7 @@
         const state = {
             activeChapterIdx: -1, 
             masteredQs: new Set(),
+            processMastered: new Set(),
             openQs: new Set(),
             currentFilter: "ALL",
             showUnmasteredOnly: false,
@@ -755,7 +747,7 @@
             }
         };
 
-        let priorityChartObj = null;
+        let processChartObj = null;
         let chapterChartObj = null;
         function initApp() {
             initTheme();
@@ -782,7 +774,6 @@
             document.getElementById('unmastered-filter-mobile').addEventListener('change', (e) => {
                 syncUnmasteredFilter(e.target.checked);
             });
-            document.getElementById('btn-open-process-training').addEventListener('click', showProcessTraining);
             document.getElementById('notes-visibility-toggle').addEventListener('click', toggleNotesVisibility);
             document.getElementById('notes-visibility-toggle-mobile').addEventListener('click', toggleNotesVisibility);
             document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
@@ -818,6 +809,15 @@
                 }
             } catch (error) {
                 console.warn('读取备注失败，已跳过。', error);
+            }
+
+            try {
+                const savedProcessMastery = JSON.parse(localStorage.getItem(STORAGE_KEYS.processMastery) || '[]');
+                if (Array.isArray(savedProcessMastery)) {
+                    state.processMastered = new Set(savedProcessMastery);
+                }
+            } catch (error) {
+                console.warn('读取过程掌握进度失败，已跳过。', error);
             }
 
             const savedNotesVisible = localStorage.getItem(STORAGE_KEYS.notesVisible);
@@ -1123,7 +1123,12 @@
             state.processTraining.sessionTotal += 1;
             if (isCorrect) {
                 state.processTraining.sessionCorrect += 1;
+                state.processMastered.add(String(state.processTraining.currentIndex));
+            } else {
+                state.processMastered.delete(String(state.processTraining.currentIndex));
             }
+            persistProcessMasteryState();
+            updateDashboardCharts();
             nextProcessTrainingCard();
         }
 
@@ -1395,7 +1400,6 @@
 
         function renderCards(idx) {
             const container = document.getElementById('cards-container');
-            container.innerHTML = '';
             
             const chapter = studyData[idx];
             const filter = state.currentFilter;
@@ -1412,13 +1416,11 @@
                 return;
             }
 
-            filteredQs.forEach(q => {
+            container.innerHTML = filteredQs.map(q => {
                 const isMastered = state.masteredQs.has(q.id);
                 const isOpen = state.openQs.has(q.id);
                 const savedNote = state.notes[q.id] || '';
                 const savedNoteEscaped = escapeHtml(savedNote);
-                const card = document.createElement('div');
-                card.className = `shell-panel rounded-xl shadow-sm border ${isMastered ? 'card-mastered' : ''} overflow-hidden transition-colors duration-300`;
                 
                 let hookHtml = '';
                 if(q.hook) {
@@ -1450,7 +1452,8 @@
                     </div>`;
                 }
 
-                card.innerHTML = `
+                return `
+                    <div class="shell-panel rounded-xl shadow-sm border ${isMastered ? 'card-mastered' : ''} overflow-hidden transition-colors duration-300">
                     <div class="px-4 md:px-6 py-4 cursor-pointer flex justify-between items-center gap-3 hover:opacity-90 transition-colors" onclick="toggleCard('${q.id}')">
                         <div class="flex items-center gap-3 min-w-0">
                             <span class="text-xl" title="优先级">${q.priority}</span>
@@ -1471,9 +1474,9 @@
                         </div>
                         <div class="pb-4"></div>
                     </div>
+                    </div>
                 `;
-                container.appendChild(card);
-            });
+            }).join('');
 
             syncExpandButtonState();
         }
@@ -1565,16 +1568,22 @@
             localStorage.setItem(STORAGE_KEYS.mastery, JSON.stringify([...state.masteredQs]));
         }
 
+        function persistProcessMasteryState() {
+            localStorage.setItem(STORAGE_KEYS.processMastery, JSON.stringify([...state.processMastered]));
+        }
+
         function persistNotesState() {
             localStorage.setItem(STORAGE_KEYS.notes, JSON.stringify(state.notes));
         }
 
         function resetStudyProgress() {
             state.masteredQs.clear();
+            state.processMastered.clear();
             state.openQs.clear();
             state.currentFilter = 'ALL';
             state.showUnmasteredOnly = false;
             persistMasteryState();
+            persistProcessMasteryState();
             syncFilter('ALL');
             syncUnmasteredFilter(false);
             updateGlobalProgress();
@@ -1620,39 +1629,74 @@
             stone: '#78716c'
         };
 
+        function getProcessDomainStats() {
+            const groups = PROCESS_TRAINING_DATA.reduce((acc, item, index) => {
+                if (!acc[item.领域]) {
+                    acc[item.领域] = { total: 0, mastered: 0, firstIndex: index };
+                }
+                acc[item.领域].total += 1;
+                if (state.processMastered.has(String(index))) {
+                    acc[item.领域].mastered += 1;
+                }
+                return acc;
+            }, {});
+            return Object.entries(groups).map(([domain, stats]) => ({
+                domain,
+                ...stats,
+                remaining: stats.total - stats.mastered
+            }));
+        }
+
         function calculateInitialStats() {
-            let pCount = { "🔴": 0, "🟡": 0, "🟢": 0 };
-            studyData.forEach(ch => {
-                ch.questions.forEach(q => {
-                    if(pCount[q.priority] !== undefined) pCount[q.priority]++;
-                });
-            });
-            state.priorityStats = pCount;
+            state.processDomainStats = getProcessDomainStats();
         }
 
         function renderDashboardCharts() {
             const textColor = getComputedStyle(document.body).getPropertyValue('--page-text').trim() || '#292524';
             const borderColor = getComputedStyle(document.body).getPropertyValue('--panel-border').trim() || '#e7e5e4';
-            const ctxPrio = document.getElementById('priorityChart').getContext('2d');
-            if (priorityChartObj) priorityChartObj.destroy();
-            priorityChartObj = new Chart(ctxPrio, {
-                type: 'doughnut',
+            const ctxProcess = document.getElementById('processChart').getContext('2d');
+            if (processChartObj) processChartObj.destroy();
+
+            state.processDomainStats = getProcessDomainStats();
+            const processLabels = state.processDomainStats.map(item => item.domain);
+            const processMasteredData = state.processDomainStats.map(item => item.mastered);
+            const processRemainingData = state.processDomainStats.map(item => item.remaining);
+            processChartObj = new Chart(ctxProcess, {
+                type: 'bar',
                 data: {
-                    labels: ['🔴 必背', '🟡 背诵', '🟢 熟练'],
-                    datasets: [{
-                        data: [state.priorityStats["🔴"], state.priorityStats["🟡"], state.priorityStats["🟢"]],
-                        backgroundColor: [chartColors.red, chartColors.yellow, chartColors.green],
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
+                    labels: processLabels,
+                    datasets: [
+                        {
+                            label: '已掌握',
+                            data: processMasteredData,
+                            backgroundColor: chartColors.green,
+                            borderRadius: 4
+                        },
+                        {
+                            label: '待学习',
+                            data: processRemainingData,
+                            backgroundColor: chartColors.gray,
+                            borderRadius: 4
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: textColor, font: { family: 'sans-serif' } } }
+                    onClick: (event, elements) => {
+                        if (!elements.length) return;
+                        const domain = state.processDomainStats[elements[0].index];
+                        if (!domain) return;
+                        state.processTraining.currentIndex = domain.firstIndex;
+                        showProcessTraining();
                     },
-                    cutout: '65%'
+                    scales: {
+                        x: { stacked: true, grid: { display: false }, ticks: { color: textColor } },
+                        y: { stacked: true, beginAtZero: true, border: { display: false }, ticks: { color: textColor }, grid: { color: borderColor } }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: textColor } }
+                    }
                 }
             });
 
@@ -1685,6 +1729,10 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (event, elements) => {
+                        if (!elements.length) return;
+                        showChapter(elements[0].index);
+                    },
                     scales: {
                         x: { stacked: true, grid: { display: false }, ticks: { color: textColor } },
                         y: { stacked: true, beginAtZero: true, border: { display: false }, ticks: { color: textColor }, grid: { color: borderColor } }
@@ -1709,6 +1757,13 @@
             chapterChartObj.data.datasets[0].data = masteredData;
             chapterChartObj.data.datasets[1].data = remainingData;
             chapterChartObj.update();
+
+            if (processChartObj) {
+                state.processDomainStats = getProcessDomainStats();
+                processChartObj.data.datasets[0].data = state.processDomainStats.map(item => item.mastered);
+                processChartObj.data.datasets[1].data = state.processDomainStats.map(item => item.remaining);
+                processChartObj.update();
+            }
         }
 
         window.onload = initApp;
