@@ -369,7 +369,7 @@
 
         <div id="main-content-scroll" class="flex-1 overflow-y-auto p-4 md:p-5">
             <div id="dashboard-view" class="max-w-6xl mx-auto block">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                     <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border">
                         <div class="flex items-center justify-between gap-4 mb-4">
                             <h4 class="text-lg font-semibold">过程掌握程度</h4>
@@ -386,6 +386,20 @@
                         </div>
                         <div class="chart-container">
                             <canvas id="chapterChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="shell-panel p-5 md:p-6 rounded-xl shadow-sm border flex flex-col">
+                        <div class="flex items-center justify-between gap-4 mb-4">
+                            <h4 class="text-lg font-semibold">选择题记忆库</h4>
+                            <a href="./note.html" class="text-sm px-3 py-2 rounded-md shell-panel-muted border shell-border">进入</a>
+                        </div>
+                        <div class="shell-soft border shell-border rounded-lg p-4 flex-1">
+                            <div class="text-sm muted-text">按章节整理选择题高频考点，支持关键词搜索、星级筛选、关键空隐藏和掌握标记。</div>
+                            <div class="mt-4 flex flex-wrap gap-2 text-xs">
+                                <span class="training-pill rounded-full px-3 py-1">note_data.json</span>
+                                <span class="training-pill rounded-full px-3 py-1">章节选择题</span>
+                                <span class="training-pill rounded-full px-3 py-1">挖空记忆</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1018,6 +1032,16 @@
                 closeMobileMenu();
             };
             nav.appendChild(trainingBtn);
+
+            const noteBtn = document.createElement('button');
+            noteBtn.dataset.view = 'note';
+            noteBtn.className = 'w-full flex items-center text-left px-6 py-3 text-sm font-medium transition-colors hover:opacity-80 border-r-4 border-transparent';
+            noteBtn.style.color = 'var(--muted-text)';
+            noteBtn.innerHTML = '<span class="mr-2 shrink-0">📝</span><span class="sidebar-label">选择题记忆库</span>';
+            noteBtn.onclick = () => {
+                window.location.href = './note.html';
+            };
+            nav.appendChild(noteBtn);
 
             studyData.forEach((ch, idx) => {
                 const btn = document.createElement('button');
