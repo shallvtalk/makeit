@@ -167,6 +167,9 @@
                         <div id="point-count" class="text-2xl font-bold mt-1">0</div>
                     </div>
                 </div>
+                <select id="chapter-jump" class="shell-input border shell-border rounded-md px-3 py-2 text-sm outline-none">
+                    <option value="">跳转章节</option>
+                </select>
                 <input id="search-input" class="shell-input border shell-border rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-500" placeholder="搜索考点、口诀、内容">
                 <div class="grid grid-cols-2 gap-2">
                     <select id="star-filter" class="shell-input border shell-border rounded-md px-3 py-2 text-sm outline-none">
@@ -207,7 +210,13 @@
             customBlanks: 'note-custom-blanks'
         };
 
-        const DATA_FILES = ['./note_data.json', './note_data_2.json'];
+        const DATA_FILES = [
+            './note_data.json',
+            './note_data_2.json',
+            './note_data_3.json',
+            './note_data_4.json',
+            './note_data_5.json'
+        ];
 
         const state = {
             data: null,
@@ -340,6 +349,7 @@
                         const mastered = state.mastered.has(point.id);
                         return `
                             <button
+                                data-point-id="${escapeHtml(point.id)}"
                                 class="w-full text-left rounded-lg border px-3 py-3 transition ${active ? 'shell-panel active-outline' : 'shell-muted shell-border'} ${mastered ? 'mastered' : ''}"
                                 onclick="selectPoint('${point.id}')"
                             >
@@ -356,6 +366,17 @@
                     }).join('')}
                 </div>
             `).join('');
+        }
+
+        function renderChapterJump() {
+            const select = document.getElementById('chapter-jump');
+            const chapters = state.data?.chapters || [];
+            select.innerHTML = '<option value="">跳转章节</option>' + chapters.map((chapter, index) => {
+                const label = chapter.chapterTitle || `第 ${index + 1} 章`;
+                return `<option value="${escapeHtml(chapter.uid)}">${escapeHtml(label)}</option>`;
+            }).join('');
+            const activePoint = state.points.find((point) => point.id === state.activePointId);
+            select.value = activePoint?.chapterUid || '';
         }
 
         function renderContentBlock(block, point) {
@@ -445,17 +466,47 @@
             if (!filtered.some((point) => point.id === state.activePointId)) {
                 state.activePointId = filtered[0]?.id || '';
             }
+            renderChapterJump();
             renderDirectory();
             renderActivePoint();
             renderProgress();
         }
 
+        function scrollActiveDirectoryItem() {
+            requestAnimationFrame(() => {
+                const activeButton = document.querySelector(`[data-point-id="${CSS.escape(state.activePointId)}"]`);
+                if (activeButton) {
+                    activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        }
+
         function selectPoint(id) {
             state.activePointId = id;
             renderAll();
+            scrollActiveDirectoryItem();
             if (window.innerWidth <= 767) {
                 document.querySelector('section').scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
+        }
+
+        function resetFiltersForChapterJump() {
+            state.query = '';
+            state.starFilter = 'ALL';
+            state.unmasteredOnly = false;
+            document.getElementById('search-input').value = '';
+            document.getElementById('star-filter').value = 'ALL';
+            document.getElementById('unmastered-filter').checked = false;
+        }
+
+        function jumpToChapter(chapterUid) {
+            if (!chapterUid) return;
+            const point = state.points.find((item) => item.chapterUid === chapterUid);
+            if (!point) return;
+            resetFiltersForChapterJump();
+            state.activePointId = point.id;
+            renderAll();
+            scrollActiveDirectoryItem();
         }
 
         function toggleMastery(id) {
@@ -582,6 +633,9 @@
             });
             document.getElementById('mark-blank-btn').addEventListener('mousedown', (event) => event.preventDefault());
             document.getElementById('mark-blank-btn').addEventListener('click', markSelectedBlank);
+            document.getElementById('chapter-jump').addEventListener('change', (event) => {
+                jumpToChapter(event.target.value);
+            });
             document.getElementById('search-input').addEventListener('input', (event) => {
                 state.query = event.target.value;
                 renderAll();
@@ -609,7 +663,7 @@
                 document.getElementById('content').innerHTML = `
                     <div class="shell-panel border shell-border rounded-xl p-8 text-center">
                         <h2 class="text-xl font-bold">记忆库数据读取失败</h2>
-                        <p class="muted-text mt-3">请通过本地服务器或 GitHub Pages 打开页面，确保 note_data.json 与 note_data_2.json 在同一目录。</p>
+                        <p class="muted-text mt-3">请通过本地服务器或 GitHub Pages 打开页面，确保 note_data.json 等数据文件与 note.html 在同一目录。</p>
                     </div>
                 `;
                 console.error(error);
@@ -619,6 +673,7 @@
         window.selectPoint = selectPoint;
         window.toggleMastery = toggleMastery;
         window.clearCustomBlanks = clearCustomBlanks;
+        window.jumpToChapter = jumpToChapter;
         window.addEventListener('load', init);
     </script>
 </body>
