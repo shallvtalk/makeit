@@ -157,16 +157,6 @@
 
         <main class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[20rem_minmax(0,1fr)]">
             <aside class="shell-panel border-r shell-border p-4 overflow-hidden flex flex-col gap-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="shell-soft rounded-lg border shell-border p-3">
-                        <div class="text-xs muted-text">章节</div>
-                        <div id="chapter-count" class="text-2xl font-bold mt-1">0</div>
-                    </div>
-                    <div class="shell-soft rounded-lg border shell-border p-3">
-                        <div class="text-xs muted-text">考点</div>
-                        <div id="point-count" class="text-2xl font-bold mt-1">0</div>
-                    </div>
-                </div>
                 <select id="chapter-jump" class="shell-input border shell-border rounded-md px-3 py-2 text-sm outline-none">
                     <option value="">跳转章节</option>
                 </select>
@@ -183,7 +173,8 @@
                         <span>未掌握</span>
                     </label>
                 </div>
-                <div id="progress-wrap" class="shell-soft border shell-border rounded-lg p-3">
+                <nav id="directory" class="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1"></nav>
+                <div id="progress-wrap" class="shell-soft border shell-border rounded-lg p-3 shrink-0">
                     <div class="flex items-center justify-between text-sm mb-2">
                         <span class="font-semibold">记忆进度</span>
                         <span id="progress-text" class="muted-text">0%</span>
@@ -192,7 +183,6 @@
                         <div id="progress-bar" class="h-full bg-emerald-600 rounded-full" style="width: 0%"></div>
                     </div>
                 </div>
-                <nav id="directory" class="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1"></nav>
             </aside>
 
             <section class="min-h-0 overflow-y-auto p-4 md:p-6">
@@ -213,9 +203,7 @@
         const DATA_FILES = [
             './note_data.json',
             './note_data_2.json',
-            './note_data_3.json',
-            './note_data_4.json',
-            './note_data_5.json'
+            './note_date_3-5.json'
         ];
 
         const state = {
@@ -653,8 +641,6 @@
                 state.data = await loadData();
                 state.points = flattenData(state.data);
                 document.getElementById('page-title').innerText = `${state.data.document || '选择题记忆库'} · 选择题记忆`;
-                document.getElementById('chapter-count').innerText = String((state.data.chapters || []).length);
-                document.getElementById('point-count').innerText = String(state.points.length);
                 if (!state.points.some((point) => point.id === state.activePointId)) {
                     state.activePointId = state.points[0]?.id || '';
                 }
